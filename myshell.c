@@ -60,5 +60,9 @@ int main()
         split_input(input);
     }
     printf("Done.\n");
+    free(input);
+    for(int i=0; i<200; i++)
+        free(temp_input[i]);
+        
     return 0;
-}
+}   
