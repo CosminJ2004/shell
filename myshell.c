@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
+char *comenzi_simple = "ls cd echo clear exit mkdir rmdir cp mv";
+
 void clear() 
 {
     printf("\033[H\033[J");
@@ -41,7 +43,6 @@ void comanda_echo(int cnt){
         printf(" ");
     }
         
-
     printf("\n");
 }
 
@@ -56,14 +57,48 @@ void comanda_pwd(){
         wait();
 }
 
+void comanda_cd();
+void comanda_mkdir();
+void comanda_rmdir();
+void comanda_cp();
+void comanda_mv();
+
+
 void comanda_necunoscuta(char *input){
     printf("%s: eroare, comanda invalida\n", input);
 }
 
-void pipe();
+void comenzi_simple(int cnt){
+    if(strcmp(temp_input[0], "ls") == 0)
+        comanda_ls();
+    else if(strcmp(temp_input[0], "echo") == 0)
+        comanda_echo(cnt);
+    else if(strcmp(temp_input[0], "pwd") == 0)
+        comanda_pwd();
+    else if(strcmp(temp_input[0], "clear") == 0)
+        clear();
+    else if(strcmp(temp_input[0], "cd") == 0)
+        comanda_cd();
+    else if(strcmp(temp_input[0], "mkdir") == 0)
+        comanda_mkdir();
+    else if(strcmp(temp_input[0], "rmdir") == 0)
+        comanda_rmdir();
+    else if(strcmp(temp_input[0], "cp") == 0)
+        comanda_cp();
+    else if(strcmp(temp_input[0], "mv") == 0)
+        comanda_mv();
+    else if(strcmp(temp_input[0], "exit") == 0);
+
+}
+
+void comenzi_redirect();
+
+void comenzi_pipe();
 
 void split_input(char *c){
     char *token = strtok(c, " ");
+    char *linie_comanda; // Sa avem linia de comanda intreaga
+    strcpy(linie_comanda, c);
     int cnt = 0;
     while (token != NULL)
     {
@@ -72,12 +107,14 @@ void split_input(char *c){
         token = strtok(NULL, " ");
     }
     
-    if(strcmp(temp_input[0], "ls") == 0)
-        comanda_ls();
-    else if(strcmp(temp_input[0], "echo") == 0)
-        comanda_echo(cnt);
-    else if(strcmp(temp_input[0], "pwd") == 0)
-        comanda_pwd();
+    if(strstr(comenzi_simple, temp_input[0]))
+        comenzi_simple(cnt);
+    else if(strstr(linie_comanda, ">") || strstr(linie_comanda, "<"))
+        comenzi_redirect();
+    else if(strstr(linie_comanda, "|"))
+        comenzi_pipe();
+    else if(strstr(linie_comanda, "&&") || strstr(linie_comanda, "||"))
+        comenzi_logice();
     else{
         comanda_necunoscuta(c);
     }    
@@ -112,8 +149,6 @@ int main()
     while(1){
         show_path();
         get_input(input);
-        if(strcmp("exit", input) == 0)
-            break;
         split_input(input);
     }
     printf("Done.\n");
