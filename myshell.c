@@ -15,6 +15,12 @@ void clear()
     printf("\033[H\033[J");
 }
 
+
+void clear() 
+{
+    printf("\033[H\033[J");
+}
+
 char temp_input[200][200];
 
 void get_input(char *c){
