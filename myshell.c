@@ -6,7 +6,7 @@
 #include <readline/history.h>
 #include <stdlib.h>
 #include <sys/types.h>
-
+#include <stdbool.h>
 
 void clear() 
 {
@@ -30,7 +30,7 @@ void comanda_ls(){
         perror(NULL);
     }
     else
-    wait();
+        wait();
 }
 
 void comanda_echo(int cnt){
@@ -45,27 +45,39 @@ void comanda_echo(int cnt){
     printf("\n");
 }
 
+void comanda_pwd(){
+    pid_t pid=fork();
+    if(pid == 0){
+        char *argv[]={"pwd", NULL};
+        execve("/bin/pwd", argv, NULL);
+        perror(NULL);
+    }
+    else
+        wait();
+}
+
 void comanda_necunoscuta(char *input){
     printf("%s: eroare, comanda invalida\n", input);
 }
+
+void pipe();
 
 void split_input(char *c){
     char *token = strtok(c, " ");
     int cnt = 0;
     while (token != NULL)
     {
-        strcpy(temp_input[cnt], token);
+        strcpy(temp_input[cnt], token);            
         cnt++;
         token = strtok(NULL, " ");
     }
-
-    // for (int i=0; i<cnt; i++)
-    //     printf("%s\n", temp_input[i]);
     
     if(strcmp(temp_input[0], "ls") == 0)
         comanda_ls();
     else if(strcmp(temp_input[0], "echo") == 0)
-         comanda_echo(cnt);
+        comanda_echo(cnt);
+    else if(strcmp(temp_input[0], "pwd") == 0)
+        comanda_pwd();
     else{
         comanda_necunoscuta(c);
     }    
@@ -92,7 +104,7 @@ void intro()
     clear();
 }
 
-//De implementat: echo, pwd, cd, conditionale(&&, ||), pipe(|), redirect(>, <)
+//De implementat: cd, conditionale(&&, ||), pipe(|), redirect(>, <)
 int main()
 {
     char input[100];
@@ -100,6 +112,8 @@ int main()
     while(1){
         show_path();
         get_input(input);
+        if(strcmp("exit", input) == 0)
+            break;
         split_input(input);
     }
     printf("Done.\n");
