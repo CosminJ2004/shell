@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <readline/readline.h>
-#include <readline/history.h>
+#include <readline/history.h> //istoric comenzi
 #include <stdlib.h>
 #include <sys/types.h>
 #include <stdbool.h>
@@ -13,7 +13,7 @@
 #include <sys/wait.h> // wait() din fork
 
 
-char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch";
+char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano";
 
 void clear() 
 {
@@ -26,6 +26,8 @@ void get_input(char *c){
     char *aux;
     aux = readline("$ ");
     strcpy(c, aux);
+    
+    add_history(aux);
     free(aux);
 }
 
@@ -247,6 +249,32 @@ void comanda_cat(int cnt) {
     }
 }
 
+void comanda_nano(int cnt){
+    if (cnt < 2) {
+        printf("Utilizare incorecta nano\n");
+        return;
+    }
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        
+        char *argv[cnt + 1];
+        argv[0] = "/bin/nano";
+        for (int i = 1; i < cnt; i++) {
+            argv[i] = temp_input[i];
+        }
+        argv[cnt] = NULL;
+
+        execve("/bin/nano", argv, NULL);
+        perror("Eroare nano");
+        exit(1);
+    } else if (pid > 0){
+        wait(NULL);
+    } else{
+        perror("Eroare la fork");
+    }
+}
+
 void comanda_necunoscuta(char *input){
     printf("%s: eroare, comanda invalida\n", input);
 }
@@ -280,6 +308,8 @@ void comenzi_simple(int cnt){
         comanda_cat(cnt);
     else if(strcmp(temp_input[0], "touch") == 0)
         comanda_touch(cnt);  
+    else if(strcmp(temp_input[0], "nano") == 0)
+        comanda_nano(cnt);
     
 }
 
