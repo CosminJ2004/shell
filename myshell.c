@@ -14,11 +14,9 @@
 
 // -de colorat la ls
 // -corectat mv
-// -comenzi logice
-// -pipe
-// 
+// -de scris in readme exemple despre comenzi logice false true, pipe
 
-char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano";
+char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano ./";
 
 void clear() 
 {
@@ -280,6 +278,22 @@ void comanda_nano(int cnt){
     }
 }
 
+void comanda_exec(int cnt) {
+
+    pid_t pid = fork();
+    if (pid == 0){
+        char *argv[] = {"/bin/sh", "-c", temp_input[0], NULL};
+        
+        execve("/bin/sh", argv, NULL);
+        perror("Eroare la exec ./");
+        exit(1);
+    } else if (pid > 0) {
+        wait(NULL);
+    } else {
+        perror("Eroare la fork");
+    }
+}
+
 void comanda_necunoscuta(char *input){
     printf("%s: eroare, comanda invalida\n", input);
 }
@@ -315,8 +329,12 @@ void comenzi_simple(int cnt){
         comanda_touch(cnt);  
     else if(strcmp(temp_input[0], "nano") == 0)
         comanda_nano(cnt);
+    else 
+        comanda_exec(cnt);
     
 }
+
+int procesare_comanda(char *c);
 
 char *trim_spaces(char *str) {
     while (*str == ' ') str++;
@@ -330,22 +348,43 @@ char *trim_spaces(char *str) {
 }
 
 void comenzi_redirect(char *linie_comanda) {
-    if (strstr(linie_comanda, ">")){
-        char linie_comanda_2[100];
-        strcpy(linie_comanda_2, linie_comanda);
+    char linie_comanda_2[100];
+    strcpy(linie_comanda_2, linie_comanda);
+    char *token;
+    char *sep = " \t\n";
+    char *aux[10];
+    char ofile[10];
+    char comanda[100];
+    int i = 0;
+    
+    // Pozitia primului ">" de la dreapta la stanga
+    int pozitie = -1;
+    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--) {
+        if (linie_comanda_2[i] == '>') {
+            pozitie = i; 
+            break;
+        } 
+    }
 
-        char *program1 = strtok(linie_comanda_2, ">");
-        char *program2 = strtok(NULL, ">");
+    for (int i = 0; i <= pozitie - 1; i++) {
+        comanda[i] = linie_comanda_2[i];
+    }
+    comanda[pozitie] = '\0';
 
-        if (!program1 || !program2) {
-            printf("Utilizare gresita redirect.\n");
-            return;
-        }
+    int j = 0;
+    for (int i = pozitie + 1; i <= strlen(linie_comanda_2) - 1; i++) {
+        ofile[j++] = linie_comanda_2[i];
+    }
+    ofile[j] = '\0';
 
-        pid_t pid = fork();
+    strcpy(ofile,trim_spaces(ofile));
+    strcpy(comanda,trim_spaces(comanda));
+   
+    int n=i;
+    pid_t pid = fork();  
         if (pid == 0){
             // Deschide fisierul pentru redirect
-            int fd = open(program2, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            int fd = open(ofile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0) {
                 perror("Eroare la deschiderea fisierului");
                 exit(1);
@@ -359,21 +398,25 @@ void comenzi_redirect(char *linie_comanda) {
             }
             close(fd);
 
-            // Executa comanda
-            char *argv[] = {"/bin/sh", "-c", program1, NULL};
-            if (execve("/bin/sh", argv, NULL) == -1) {
-                perror("Eroare execve");
+            char *args[10] = {0};
+            int i = 0;
+            char *token = strtok(comanda, " ");
+            while (token != NULL) {
+                args[i++] = token;
+                token = strtok(NULL, " ");
+            }
+            args[i] = NULL;
+
+            if (execvp(args[0], args) == -1) {
+                perror("Eroare execvp");
                 exit(1);
             }
-        } else if (pid > 0){
+        }   
+        else if (pid > 0){
             wait(NULL);
         }
-    }
+    
 }
-
-
-
-// De rezolvat !!!!!!!!!!!!!!!!!!!!!
 
 void comenzi_pipe(char *linie_comanda) {
     char temp[200];
@@ -405,7 +448,7 @@ void comenzi_pipe(char *linie_comanda) {
 
         char *argv1[] = {"/bin/sh", "-c", cmd1, NULL};
         execve("/bin/sh", argv1, NULL);  
-        perror("Eroare la execuția cmd1");
+        perror("Eroare la executia cmd1");
         exit(1);
     }
 
@@ -417,7 +460,7 @@ void comenzi_pipe(char *linie_comanda) {
 
         char *argv2[] = {"/bin/sh", "-c", cmd2, NULL};
         execve("/bin/sh", argv2, NULL);  
-        perror("Eroare la execuția cmd2");
+        perror("Eroare la executia cmd2");
         exit(1);
     }
 
@@ -425,17 +468,53 @@ void comenzi_pipe(char *linie_comanda) {
     close(fd[1]);
 
     wait(NULL);
-    wait(NULL);
-
-    
+    wait(NULL);   
 }
 
-void comenzi_logice(){
+void comenzi_logice(char *linie_comanda) {
+    char temp[200];
+    strcpy(temp, linie_comanda);
 
+    // Pointer pentru strtok_r
+    char *saveptr;
+
+    if (strstr(temp, "&&") != NULL) {
+        char *cmd = strtok_r(temp, "&&", &saveptr);  // strtok_r e thread-safe
+        while (cmd != NULL) {
+            cmd = trim_spaces(cmd);
+
+            int status = procesare_comanda(cmd);
+            if(status != 0){
+                break;
+            }
+
+            cmd = strtok_r(NULL, "&&", &saveptr);
+        }
+    }
+    else if(strstr(temp, "||") != NULL){
+        char *cmd = strtok_r(temp, "||", &saveptr);  // strtok_r e thread-safe
+        while (cmd != NULL) {
+            cmd = trim_spaces(cmd);
+            int status;
+            
+            if(strcmp(cmd, "false") == 0)
+                status = 1;
+            else if(strcmp(cmd, "true") == 0)
+                status = 0;
+            else
+                status = procesare_comanda(cmd);
+
+            if(status == 0){
+                break;
+            }
+
+            cmd = strtok_r(NULL, "||", &saveptr);
+        }    
+    }
 }
 
-void split_input(char *c){
 
+int procesare_comanda(char *c){
     char linie_comanda[200]; // Sa avem linia de comanda intreaga
     strcpy(linie_comanda, c);
     char *token = strtok(c, " ");
@@ -449,16 +528,17 @@ void split_input(char *c){
     
     if(strstr(linie_comanda, ">") || strstr(linie_comanda, "<"))
         comenzi_redirect(linie_comanda);
+    else if(strstr(linie_comanda, "&&") || strstr(linie_comanda, "||"))
+        comenzi_logice(linie_comanda);
     else if(strstr(linie_comanda, "|"))
         comenzi_pipe(linie_comanda);
-    else if(strstr(linie_comanda, "&&") || strstr(linie_comanda, "||"))
-        comenzi_logice();
-    else if(strstr(sir_comenzi, temp_input[0]))
+    else if(strstr(sir_comenzi, temp_input[0]) || strstr(linie_comanda, "./"))
         comenzi_simple(cnt);
     else{
         comanda_necunoscuta(linie_comanda);
-    }    
+    }
 
+    return 0;
 }
 
 void show_path(){
@@ -488,7 +568,7 @@ int main()
     while(1){
         show_path();
         get_input(input);
-        split_input(input);
+        procesare_comanda(input);
     }
     return 0;
 }   
