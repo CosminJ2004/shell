@@ -12,6 +12,11 @@
 #include <sys/stat.h>
 #include <sys/wait.h> // wait() din fork
 
+// -de colorat la ls
+// -corectat mv
+// -comenzi logice
+// -pipe
+// 
 
 char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano";
 
@@ -313,6 +318,17 @@ void comenzi_simple(int cnt){
     
 }
 
+char *trim_spaces(char *str) {
+    while (*str == ' ') str++;
+    
+    char *end = str + strlen(str) - 1;
+    while (end > str && *end == ' ') {
+        *end = '\0';
+        end--;
+    }
+    return str;
+}
+
 void comenzi_redirect(char *linie_comanda) {
     if (strstr(linie_comanda, ">")){
         char linie_comanda_2[100];
@@ -358,50 +374,60 @@ void comenzi_redirect(char *linie_comanda) {
 
 
 // De rezolvat !!!!!!!!!!!!!!!!!!!!!
-void comenzi_pipe(char *linie_comanda){
+
+void comenzi_pipe(char *linie_comanda) {
     char temp[200];
     strcpy(temp, linie_comanda);
 
     char *cmd1 = strtok(temp, "|");
-    char *cmd2 = strtok(NULL, "|");
-    
+    char *cmd2 = strtok(NULL, "");
+
     if (cmd1 == NULL || cmd2 == NULL) {
         printf("Format invalid pentru pipe.\n");
         return;
     }
 
+    cmd1 = trim_spaces(cmd1);
+    cmd2 = trim_spaces(cmd2);
+    
+
     int fd[2];
-    if (pipe(fd) == -1){
+    if (pipe(fd) == -1) {
         perror("Eroare la crearea pipe-ului");
         return;
     }
-    pid_t pid1 = fork();
-    if (pid1 == 0){ // Proces copil
 
-        close(fd[0]);  // Inchide partea de citire a pipe-ului
-        dup2(fd[1], STDOUT_FILENO);  // Redirectioneaza stdout catre pipe
-        close(fd[1]);  // Inchide pipe-ul dupa redirectionare
-        
+    pid_t pid1 = fork();
+    if (pid1 == 0){
+        close(fd[0]);  
+        dup2(fd[1], STDOUT_FILENO);  
+        close(fd[1]);
+
         char *argv1[] = {"/bin/sh", "-c", cmd1, NULL};
-        execve("/bin/sh", argv1, NULL);  // Executa comanda 1
-        perror("Eroare la executia cmd1");
+        execve("/bin/sh", argv1, NULL);  
+        perror("Eroare la execuția cmd1");
         exit(1);
     }
 
     pid_t pid2 = fork();
-    if (pid2 == 0) {
-        close(fd[1]);  // Inchide partea de scriere a pipe-ului
-        dup2(fd[0], STDIN_FILENO);  // Redirectioneaza stdin catre pipe
-        close(fd[0]);  // Inchide pipe-ul dupa redirectionare
-        
+    if (pid2 == 0) {  // Al doilea proces copil
+        close(fd[1]);  
+        dup2(fd[0], STDIN_FILENO);  
+        close(fd[0]);
+
         char *argv2[] = {"/bin/sh", "-c", cmd2, NULL};
-        execve("/bin/sh", argv2, NULL);  // Executa comanda 2
-        perror("Eroare la executia cmd2");
+        execve("/bin/sh", argv2, NULL);  
+        perror("Eroare la execuția cmd2");
         exit(1);
     }
 
+    close(fd[0]);
+    close(fd[1]);
 
-    //printf("%s, %s\n", cmd1, cmd2);
+    wait(NULL);
+    wait(NULL);
+
+    
 }
 
 void comenzi_logice(){
@@ -409,9 +435,10 @@ void comenzi_logice(){
 }
 
 void split_input(char *c){
-    char *token = strtok(c, " ");
+
     char linie_comanda[200]; // Sa avem linia de comanda intreaga
     strcpy(linie_comanda, c);
+    char *token = strtok(c, " ");
     int cnt = 0;
     while (token != NULL)
     {
@@ -420,16 +447,16 @@ void split_input(char *c){
         token = strtok(NULL, " ");
     }
     
-    if(strstr(sir_comenzi, temp_input[0]))
-        comenzi_simple(cnt);
-    else if(strstr(linie_comanda, ">") || strstr(linie_comanda, "<"))
+    if(strstr(linie_comanda, ">") || strstr(linie_comanda, "<"))
         comenzi_redirect(linie_comanda);
     else if(strstr(linie_comanda, "|"))
         comenzi_pipe(linie_comanda);
     else if(strstr(linie_comanda, "&&") || strstr(linie_comanda, "||"))
         comenzi_logice();
+    else if(strstr(sir_comenzi, temp_input[0]))
+        comenzi_simple(cnt);
     else{
-        comanda_necunoscuta(c);
+        comanda_necunoscuta(linie_comanda);
     }    
 
 }
