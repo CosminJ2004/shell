@@ -19,7 +19,7 @@
 //
 
 char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano ./";
-
+const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 void clear() 
 {
     printf("\033[H\033[J");
@@ -34,6 +34,51 @@ void get_input(char *c){
     
     add_history(aux);
     free(aux);
+}
+int find_base64_char_index(char c) {
+    for (int i = 0; i < 64; i++) {
+        if (base64_chars[i] == c) {
+            return i;
+        }
+    }
+    return -1;
+}
+void decode_base64(char *input) {
+    int i = 0, j = 0;
+    unsigned char input_buffer[4], output_buffer[3];
+        char* token;
+        char output[100];
+token=strtok(input," ");
+        token=strtok(NULL," ");
+        token=strtok(NULL," ");
+        strcpy(input,token);
+
+    while (input[i] != '\0') {
+        for (int k = 0; k < 4; k++) {
+            if (input[i] != '=') {
+                input_buffer[k] = find_base64_char_index(input[i++]);
+            } else {
+                input_buffer[k] = 0;
+                i++;
+            }
+        }
+
+        output_buffer[0] = (input_buffer[0] << 2) + ((input_buffer[1] & 0x30) >> 4);
+        output_buffer[1] = ((input_buffer[1] & 0x0F) << 4) + ((input_buffer[2] & 0x3C) >> 2);
+        output_buffer[2] = ((input_buffer[2] & 0x03) << 6) + input_buffer[3];
+
+        for (int k = 0; k < 3; k++) {
+            if (input[i - 1] != '=') {
+                output[j++] = output_buffer[k];
+            } else {
+                break;
+            }
+        }
+    }
+
+    output[j] = '\0';
+        printf("%s",output);
+        printf("\n");
 }
 
 void comanda_ls(){
@@ -598,6 +643,8 @@ int procesare_comanda(char *c){
         comenzi_pipe(linie_comanda);
     else if(strstr(sir_comenzi, temp_input[0]) || strstr(linie_comanda, "./"))
         comenzi_simple(cnt);
+        else if(strstr(linie_comanda,"base64 -d"))
+        decode_base64(linie_comanda);
     else{
         comanda_necunoscuta(linie_comanda);
     }
@@ -636,3 +683,4 @@ int main()
     }
     return 0;
 }   
+   
