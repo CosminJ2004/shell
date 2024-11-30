@@ -14,7 +14,9 @@
 
 // -de colorat la ls
 // -corectat mv
-// -de scris in readme exemple despre comenzi logice false true, pipe
+// -de scris in readme exemple despre comenzi logice false true, pipe, redirect
+// -de facut mai frumos totusi redirect
+//
 
 char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano ./";
 
@@ -142,19 +144,18 @@ void comanda_cp(int cnt){
     close(src_fd);
     close(dest_fd);
 }
-void comanda_mv(int cnt){
+void comanda_mv(int cnt) {
     if (cnt != 3) {
-        printf("Eroare: Trebuie să specifici fisierul sursa si destinatia.\n");
+        printf("Eroare: Trebuie ss specifici fisierul sursa si destinatia.\n");
         return;
     }
 
-    int result = rename(temp_input[1], temp_input[2]);
-    if (result == 0) {
-        printf("Fisierul a fost mutat cu succes!\n");
-    } else {
-        perror("Eroare la mutarea fisierului");
-    }
+    // Verifică dacă destinația este un director
+    struct stat dest_stat;
+    
 }
+
+
 void comanda_exit(){
     printf("Iesire din shell...\n");
     exit(0);
@@ -348,41 +349,46 @@ char *trim_spaces(char *str) {
 }
 
 void comenzi_redirect(char *linie_comanda) {
-    char linie_comanda_2[100];
+    char linie_comanda_2[100]; // Alocare buffer pe stivă
     strcpy(linie_comanda_2, linie_comanda);
     char *token;
-    char *sep = " \t\n";
+    char *sep = " \t\n"; // Adăugăm spațiul ca separator
     char *aux[10];
     char ofile[10];
     char comanda[100];
-    int i = 0;
+    int i = 0, k=0;
     
-    // Pozitia primului ">" de la dreapta la stanga
-    int pozitie = -1;
-    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--) {
+    
+    int pozitie = -1,pozitie2=-1; // Inițializăm cu -1, pentru cazul în care caracterul nu este găsit
+    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--) { // Parcurgem șirul de la dreapta la stânga
         if (linie_comanda_2[i] == '>') {
-            pozitie = i; 
-            break;
-        } 
+            pozitie = i; // Salvăm poziția
+            break;       // Ne oprim, deoarece e prima apariție din dreapta
+        }
+        if(linie_comanda_2[k]=='<') {pozitie2=k; break;}
+        k++;
     }
-
-    for (int i = 0; i <= pozitie - 1; i++) {
+        if(pozitie!=-1){
+   for (int i = 0; i <= pozitie - 1; i++) {
         comanda[i] = linie_comanda_2[i];
     }
-    comanda[pozitie] = '\0';
+    comanda[pozitie] = '\0'; // Adăugăm terminatorul de șir
 
+    // Copierea numelui fișierului de ieșire
     int j = 0;
     for (int i = pozitie + 1; i <= strlen(linie_comanda_2) - 1; i++) {
         ofile[j++] = linie_comanda_2[i];
     }
-    ofile[j] = '\0';
-
+    ofile[j] = '\0'; // Adăugăm terminatorul de șir
     strcpy(ofile,trim_spaces(ofile));
     strcpy(comanda,trim_spaces(comanda));
+    printf("Comanda: %s\n", comanda);
+    printf("Output file: %s\n", ofile);
    
+    
     int n=i;
-    pid_t pid = fork();  
-        if (pid == 0){
+     pid_t pid = fork();  
+      if (pid == 0){
             // Deschide fisierul pentru redirect
             int fd = open(ofile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0) {
@@ -398,9 +404,69 @@ void comenzi_redirect(char *linie_comanda) {
             }
             close(fd);
 
+         char *args[10] = {0};
+    int i = 0;
+    char *token = strtok(comanda, " ");
+    while (token != NULL) {
+        args[i++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[i] = NULL;
+
+    // Execută comanda
+    if (execvp(args[0], args) == -1) {
+        perror("Eroare execvp");
+        exit(1);
+    }}   
+        else if (pid > 0){
+            wait(NULL);
+        }}
+if (pozitie2 != -1) {
+        // Redirecționare intrare (<)
+        char *token_;
+        char *sep_ = " \t\n"; // Adăugăm spațiul ca separator
+        char *aux_[10];
+        char ifile_[10];
+        char comanda_[100];
+        int i_ = 0;
+
+        for (int i = 0; i <= pozitie2 - 1; i++) {
+            comanda_[i] = linie_comanda_2[i];
+        }
+        comanda_[pozitie2] = '\0'; // Adăugăm terminatorul de șir
+
+        // Copierea numelui fișierului de intrare
+        int j = 0;
+        for (int i = pozitie2 + 1; i <= strlen(linie_comanda_2) - 1; i++) {
+            ifile_[j++] = linie_comanda_2[i];
+        }
+        ifile_[j] = '\0'; // Adăugăm terminatorul de șir
+        strcpy(ifile_, trim_spaces(ifile_));
+        strcpy(comanda_, trim_spaces(comanda_));
+        printf("Comanda: %s\n", comanda_);
+        printf("Input file: %s\n", ifile_);
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Deschide fisierul pentru redirect
+            int fd = open(ifile_, O_RDONLY);
+            if (fd < 0) {
+                perror("Eroare la deschiderea fisierului");
+                exit(1);
+            }
+
+            // Redirectioneaza stdin in fisier
+            if (dup2(fd, STDIN_FILENO) == -1) {
+                perror("Eroare dup2");
+                close(fd);
+                exit(1);
+            }
+            close(fd);
+
+            // Execută comanda
             char *args[10] = {0};
             int i = 0;
-            char *token = strtok(comanda, " ");
+            char *token = strtok(comanda_, " ");
             while (token != NULL) {
                 args[i++] = token;
                 token = strtok(NULL, " ");
@@ -411,12 +477,10 @@ void comenzi_redirect(char *linie_comanda) {
                 perror("Eroare execvp");
                 exit(1);
             }
-        }   
-        else if (pid > 0){
+        } else if (pid > 0) {
             wait(NULL);
         }
-    
-}
+    }}
 
 void comenzi_pipe(char *linie_comanda) {
     char temp[200];
