@@ -1,0 +1,23 @@
+sort
+uname
+df
+free
+cmod
+chown
+
+proceeses ->top kill
+
+
+ctrl+s -> freeze ctrl+q-> unfreeze (signals)
+
+!! -> ultima comanda
+
+find
+
+file
+
+ls cu optiuni
+
+
+clear 
+
