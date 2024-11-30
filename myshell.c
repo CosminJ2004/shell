@@ -35,6 +35,10 @@ void get_input(char *c){
     add_history(aux);
     free(aux);
 }
+void last_comand(char *c)
+{
+
+}
 int find_base64_char_index(char c) {
     for (int i = 0; i < 64; i++) {
         if (base64_chars[i] == c) {
@@ -621,6 +625,80 @@ void comenzi_logice(char *linie_comanda) {
         }    
     }
 }
+void print_permissions(mode_t mode) {
+    char permissions[10];
+
+    // Tipul fișierului
+    if (S_ISREG(mode)) permissions[0] = '-';
+    else if (S_ISDIR(mode)) permissions[0] = 'd';
+    else if (S_ISLNK(mode)) permissions[0] = 'l';
+    else if (S_ISCHR(mode)) permissions[0] = 'c';
+    else if (S_ISBLK(mode)) permissions[0] = 'b';
+    else if (S_ISFIFO(mode)) permissions[0] = 'p';
+    else if (S_ISSOCK(mode)) permissions[0] = 's';
+    else permissions[0] = '?';
+
+    // Permisiuni pentru proprietar
+    permissions[1] = (mode & S_IRUSR) ? 'r' : '-';
+    permissions[2] = (mode & S_IWUSR) ? 'w' : '-';
+    permissions[3] = (mode & S_IXUSR) ? 'x' : '-';
+
+    // Permisiuni pentru grup
+    permissions[4] = (mode & S_IRGRP) ? 'r' : '-';
+    permissions[5] = (mode & S_IWGRP) ? 'w' : '-';
+    permissions[6] = (mode & S_IXGRP) ? 'x' : '-';
+
+    // Permisiuni pentru ceilalți
+    permissions[7] = (mode & S_IROTH) ? 'r' : '-';
+    permissions[8] = (mode & S_IWOTH) ? 'w' : '-';
+    permissions[9] = (mode & S_IXOTH) ? 'x' : '-';
+
+    permissions[10] = '\0'; // Terminator de șir
+
+    printf("Permisiuni fișier: %s\n", permissions);
+}
+
+void comanda_file(char *input)
+{
+
+    char *file;
+    file=strtok(input, " ");
+    file=strtok(NULL," ");
+
+    pid_t pid=fork();
+    if(pid==0)
+    {
+     struct stat sb;
+        if(stat(file, &sb)) //stat intoarce informatii despre un obiect (aici, fisier)
+        {
+            perror("Eroare Fisier dat catre file.\n");
+            
+        }else{
+        if (S_ISREG(sb.st_mode)) {
+    printf("Tipul fișierului: Fișier obișnuit\n");
+} else if (S_ISDIR(sb.st_mode)) {
+    printf("Tipul fișierului: Director\n");
+} else if (S_ISLNK(sb.st_mode)) {
+    printf("Tipul fișierului: Link simbolic\n");
+}
+
+printf("ID-ul utilizatorului proprietar: %u\n", sb.st_uid);
+printf("ID-ul grupului proprietar: %u\n", sb.st_gid);
+printf("Numărul de linkuri: %lu\n", (unsigned long)sb.st_nlink);
+
+      printf("Timpul ultimei accesări: %s", ctime(&sb.st_atime));
+        printf("Dimensiunea fișierului (în octeți): %lld\n", (long long)sb.st_size);
+        printf("Drepturi de acces (octal): %o\n", sb.st_mode & 0777);
+        printf("ID-ul inode-ului: %lu\n", (unsigned long)sb.st_ino);
+        print_permissions(sb.st_mode);       
+ }
+    
+    }
+        else if(pid>0) wait(NULL);
+
+
+    
+}
 
 
 int procesare_comanda(char *c){
@@ -645,6 +723,8 @@ int procesare_comanda(char *c){
         comenzi_simple(cnt);
         else if(strstr(linie_comanda,"base64 -d"))
         decode_base64(linie_comanda);
+        else if(strstr(temp_input[0],"file"))
+         comanda_file(linie_comanda);
     else{
         comanda_necunoscuta(linie_comanda);
     }
@@ -682,5 +762,4 @@ int main()
         procesare_comanda(input);
     }
     return 0;
-}   
-   
+}  
