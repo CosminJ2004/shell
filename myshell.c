@@ -35,10 +35,6 @@ void get_input(char *c){
     add_history(aux);
     free(aux);
 }
-void last_comand(char *c)
-{
-
-}
 int find_base64_char_index(char c) {
     for (int i = 0; i < 64; i++) {
         if (base64_chars[i] == c) {
@@ -50,12 +46,10 @@ int find_base64_char_index(char c) {
 void decode_base64(char *input) {
     int i = 0, j = 0;
     unsigned char input_buffer[4], output_buffer[3];
-        char* token;
-        char output[100];
-token=strtok(input," ");
-        token=strtok(NULL," ");
-        token=strtok(NULL," ");
-        strcpy(input,token);
+    char* token;
+    char output[100];
+    token=strtok(input," "); token=strtok(NULL," "); token=strtok(NULL," ");
+    strcpy(input,token);
 
     while (input[i] != '\0') {
         for (int k = 0; k < 4; k++) {
@@ -398,53 +392,45 @@ char *trim_spaces(char *str) {
 }
 
 void comenzi_redirect(char *linie_comanda) {
-    char linie_comanda_2[100]; // Alocare buffer pe stivă
+    char linie_comanda_2[100];
     strcpy(linie_comanda_2, linie_comanda);
     char *token;
-    char *sep = " \t\n"; // Adăugăm spațiul ca separator
+    char *sep = " \t\n";
     char *aux[10];
     char ofile[10];
     char comanda[100];
     int i = 0, k=0;
     
     
-    int pozitie = -1,pozitie2=-1; // Inițializăm cu -1, pentru cazul în care caracterul nu este găsit
-    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--) { // Parcurgem șirul de la dreapta la stânga
-        if (linie_comanda_2[i] == '>') {
-            pozitie = i; // Salvăm poziția
-            break;       // Ne oprim, deoarece e prima apariție din dreapta
-        }
-        if(linie_comanda_2[k]=='<') {pozitie2=k; break;}
+    int pozitie = -1, pozitie2=-1; // Initializam cu -1, pentru cazul in care caracterul nu este gasit
+    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--){
+        if (linie_comanda_2[i] == '>') { pozitie = i; break;}
+        if(linie_comanda_2[k]=='<') { pozitie2 = k; break;}
         k++;
     }
-        if(pozitie!=-1){
-   for (int i = 0; i <= pozitie - 1; i++) {
-        comanda[i] = linie_comanda_2[i];
-    }
-    comanda[pozitie] = '\0'; // Adăugăm terminatorul de șir
+    if(pozitie!=-1){
+        for (int i = 0; i <= pozitie - 1; i++) {
+            comanda[i] = linie_comanda_2[i];
+        }
+        comanda[pozitie] = '\0';
 
-    // Copierea numelui fișierului de ieșire
-    int j = 0;
-    for (int i = pozitie + 1; i <= strlen(linie_comanda_2) - 1; i++) {
-        ofile[j++] = linie_comanda_2[i];
-    }
-    ofile[j] = '\0'; // Adăugăm terminatorul de șir
-    strcpy(ofile,trim_spaces(ofile));
-    strcpy(comanda,trim_spaces(comanda));
-    printf("Comanda: %s\n", comanda);
-    printf("Output file: %s\n", ofile);
-   
+        int j = 0;
+        for (int i = pozitie + 1; i <= strlen(linie_comanda_2) - 1; i++) {
+            ofile[j++] = linie_comanda_2[i];
+        }
+        ofile[j] = '\0';
+        strcpy(ofile,trim_spaces(ofile));
+        strcpy(comanda,trim_spaces(comanda));   
     
-    int n=i;
-     pid_t pid = fork();  
-      if (pid == 0){
+        int n=i;
+        pid_t pid = fork();  
+        if (pid == 0){
             // Deschide fisierul pentru redirect
             int fd = open(ofile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0) {
                 perror("Eroare la deschiderea fisierului");
                 exit(1);
             }
-
             // Redirectioneaza stdout in fisier
             if (dup2(fd, STDOUT_FILENO) == -1) {
                 perror("Eroare dup2");
@@ -453,83 +439,82 @@ void comenzi_redirect(char *linie_comanda) {
             }
             close(fd);
 
-         char *args[10] = {0};
-    int i = 0;
-    char *token = strtok(comanda, " ");
-    while (token != NULL) {
-        args[i++] = token;
-        token = strtok(NULL, " ");
+        char *args[10] = {0};
+        int i = 0;
+        char *token = strtok(comanda, " ");
+        while (token != NULL) {
+            args[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        args[i] = NULL;
+
+        if (execvp(args[0], args) == -1) {
+            perror("Eroare execvp");
+            exit(1);
+        }}   
+    else if (pid > 0){
+            wait(NULL);
+        }
     }
-    args[i] = NULL;
+    if (pozitie2 != -1) {
+            // Redirectionare intrare (<)
+            char *token_;
+            char *sep_ = " \t\n";
+            char *aux_[10];
+            char ifile_[10];
+            char comanda_[100];
+            int i_ = 0;
 
-    // Execută comanda
-    if (execvp(args[0], args) == -1) {
-        perror("Eroare execvp");
-        exit(1);
-    }}   
-        else if (pid > 0){
-            wait(NULL);
-        }}
-if (pozitie2 != -1) {
-        // Redirecționare intrare (<)
-        char *token_;
-        char *sep_ = " \t\n"; // Adăugăm spațiul ca separator
-        char *aux_[10];
-        char ifile_[10];
-        char comanda_[100];
-        int i_ = 0;
-
-        for (int i = 0; i <= pozitie2 - 1; i++) {
-            comanda_[i] = linie_comanda_2[i];
-        }
-        comanda_[pozitie2] = '\0'; // Adăugăm terminatorul de șir
-
-        // Copierea numelui fișierului de intrare
-        int j = 0;
-        for (int i = pozitie2 + 1; i <= strlen(linie_comanda_2) - 1; i++) {
-            ifile_[j++] = linie_comanda_2[i];
-        }
-        ifile_[j] = '\0'; // Adăugăm terminatorul de șir
-        strcpy(ifile_, trim_spaces(ifile_));
-        strcpy(comanda_, trim_spaces(comanda_));
-        printf("Comanda: %s\n", comanda_);
-        printf("Input file: %s\n", ifile_);
-
-        pid_t pid = fork();
-        if (pid == 0) {
-            // Deschide fisierul pentru redirect
-            int fd = open(ifile_, O_RDONLY);
-            if (fd < 0) {
-                perror("Eroare la deschiderea fisierului");
-                exit(1);
+            for (int i = 0; i <= pozitie2 - 1; i++){
+                comanda_[i] = linie_comanda_2[i];
             }
+            comanda_[pozitie2] = '\0';
 
-            // Redirectioneaza stdin in fisier
-            if (dup2(fd, STDIN_FILENO) == -1) {
-                perror("Eroare dup2");
+            // Copierea numelui fisierului de intrare
+            int j = 0;
+            for (int i = pozitie2 + 1; i <= strlen(linie_comanda_2) - 1; i++) {
+                ifile_[j++] = linie_comanda_2[i];
+            }
+            ifile_[j] = '\0';
+            strcpy(ifile_, trim_spaces(ifile_));
+            strcpy(comanda_, trim_spaces(comanda_));
+
+            pid_t pid = fork();
+            if (pid == 0) {
+                // Deschide fisierul pentru redirect
+                int fd = open(ifile_, O_RDONLY);
+                if (fd < 0) {
+                    perror("Eroare la deschiderea fisierului");
+                    exit(1);
+                }
+
+                // Redirectioneaza stdin in fisier
+                if (dup2(fd, STDIN_FILENO) == -1) {
+                    perror("Eroare dup2");
+                    close(fd);
+                    exit(1);
+                }
                 close(fd);
-                exit(1);
-            }
-            close(fd);
 
-            // Execută comanda
-            char *args[10] = {0};
-            int i = 0;
-            char *token = strtok(comanda_, " ");
-            while (token != NULL) {
-                args[i++] = token;
-                token = strtok(NULL, " ");
-            }
-            args[i] = NULL;
+                // Executa comanda
+                char *args[10] = {0};
+                int i = 0;
+                char *token = strtok(comanda_, " ");
+                while (token != NULL) {
+                    args[i++] = token;
+                    token = strtok(NULL, " ");
+                }
+                args[i] = NULL;
 
-            if (execvp(args[0], args) == -1) {
-                perror("Eroare execvp");
-                exit(1);
+                if (execvp(args[0], args) == -1) {
+                    perror("Eroare execvp");
+                    exit(1);
+                }
+            } else if (pid > 0) {
+                wait(NULL);
             }
-        } else if (pid > 0) {
-            wait(NULL);
-        }
-    }}
+    }
+}
 
 void comenzi_pipe(char *linie_comanda) {
     char temp[200];
@@ -566,7 +551,7 @@ void comenzi_pipe(char *linie_comanda) {
     }
 
     pid_t pid2 = fork();
-    if (pid2 == 0) {  // Al doilea proces copil
+    if (pid2 == 0) {
         close(fd[1]);  
         dup2(fd[0], STDIN_FILENO);  
         close(fd[0]);
@@ -588,15 +573,20 @@ void comenzi_logice(char *linie_comanda) {
     char temp[200];
     strcpy(temp, linie_comanda);
 
-    // Pointer pentru strtok_r
+    // Pointer pentru strtok_r, strtok_r e thread-safe, in cazul asta mai potrivit decat strtok
     char *saveptr;
-
+    int status;
     if (strstr(temp, "&&") != NULL) {
-        char *cmd = strtok_r(temp, "&&", &saveptr);  // strtok_r e thread-safe
+        char *cmd = strtok_r(temp, "&&", &saveptr);
         while (cmd != NULL) {
             cmd = trim_spaces(cmd);
-
-            int status = procesare_comanda(cmd);
+            
+            if(strcmp(cmd, "false") == 0)
+                status = 1;
+            else if(strcmp(cmd, "true") == 0)
+                status = 0;
+            else
+                status = procesare_comanda(cmd);
             if(status != 0){
                 break;
             }
@@ -605,10 +595,9 @@ void comenzi_logice(char *linie_comanda) {
         }
     }
     else if(strstr(temp, "||") != NULL){
-        char *cmd = strtok_r(temp, "||", &saveptr);  // strtok_r e thread-safe
+        char *cmd = strtok_r(temp, "||", &saveptr);
         while (cmd != NULL) {
             cmd = trim_spaces(cmd);
-            int status;
             
             if(strcmp(cmd, "false") == 0)
                 status = 1;
@@ -620,7 +609,6 @@ void comenzi_logice(char *linie_comanda) {
             if(status == 0){
                 break;
             }
-
             cmd = strtok_r(NULL, "||", &saveptr);
         }    
     }
@@ -628,7 +616,7 @@ void comenzi_logice(char *linie_comanda) {
 void print_permissions(mode_t mode) {
     char permissions[10];
 
-    // Tipul fișierului
+    // Tipul fisierului
     if (S_ISREG(mode)) permissions[0] = '-';
     else if (S_ISDIR(mode)) permissions[0] = 'd';
     else if (S_ISLNK(mode)) permissions[0] = 'l';
@@ -648,19 +636,18 @@ void print_permissions(mode_t mode) {
     permissions[5] = (mode & S_IWGRP) ? 'w' : '-';
     permissions[6] = (mode & S_IXGRP) ? 'x' : '-';
 
-    // Permisiuni pentru ceilalți
+    // Permisiuni pentru ceilalti
     permissions[7] = (mode & S_IROTH) ? 'r' : '-';
     permissions[8] = (mode & S_IWOTH) ? 'w' : '-';
     permissions[9] = (mode & S_IXOTH) ? 'x' : '-';
 
     permissions[10] = '\0'; // Terminator de șir
 
-    printf("Permisiuni fișier: %s\n", permissions);
+    printf("Permisiuni fisier: %s\n", permissions);
 }
 
 void comanda_file(char *input)
 {
-
     char *file;
     file=strtok(input, " ");
     file=strtok(NULL," ");
@@ -668,36 +655,28 @@ void comanda_file(char *input)
     pid_t pid=fork();
     if(pid==0)
     {
-     struct stat sb;
-        if(stat(file, &sb)) //stat intoarce informatii despre un obiect (aici, fisier)
+    struct stat sb;
+        if(stat(file, &sb)) // stat intoarce informatii despre un obiect (aici, fisier)
         {
             perror("Eroare Fisier dat catre file.\n");
             
         }else{
         if (S_ISREG(sb.st_mode)) {
-    printf("Tipul fișierului: Fișier obișnuit\n");
-} else if (S_ISDIR(sb.st_mode)) {
-    printf("Tipul fișierului: Director\n");
-} else if (S_ISLNK(sb.st_mode)) {
-    printf("Tipul fișierului: Link simbolic\n");
-}
+            printf("Tipul fisierului: Fisier obisnuit\n");
+        } else if (S_ISDIR(sb.st_mode)) {
+            printf("Tipul fisierului: Director\n");
+        }
 
-printf("ID-ul utilizatorului proprietar: %u\n", sb.st_uid);
-printf("ID-ul grupului proprietar: %u\n", sb.st_gid);
-printf("Numărul de linkuri: %lu\n", (unsigned long)sb.st_nlink);
+        printf("ID-ul utilizatorului proprietar: %u\n", sb.st_uid);
+        printf("ID-ul grupului proprietar: %u\n", sb.st_gid);
 
-      printf("Timpul ultimei accesări: %s", ctime(&sb.st_atime));
-        printf("Dimensiunea fișierului (în octeți): %lld\n", (long long)sb.st_size);
+        printf("Timpul ultimei accesari: %s", ctime(&sb.st_atime));
+        printf("Dimensiunea fisierului (in bytes): %lld\n", (long long)sb.st_size);
         printf("Drepturi de acces (octal): %o\n", sb.st_mode & 0777);
-        printf("ID-ul inode-ului: %lu\n", (unsigned long)sb.st_ino);
         print_permissions(sb.st_mode);       
- }
-    
+        }
     }
         else if(pid>0) wait(NULL);
-
-
-    
 }
 
 
@@ -721,9 +700,9 @@ int procesare_comanda(char *c){
         comenzi_pipe(linie_comanda);
     else if(strstr(sir_comenzi, temp_input[0]) || strstr(linie_comanda, "./"))
         comenzi_simple(cnt);
-        else if(strstr(linie_comanda,"base64 -d"))
+    else if(strstr(linie_comanda,"base64 -d"))
         decode_base64(linie_comanda);
-        else if(strstr(temp_input[0],"file"))
+    else if(strstr(temp_input[0],"file"))
          comanda_file(linie_comanda);
     else{
         comanda_necunoscuta(linie_comanda);
