@@ -50,7 +50,7 @@
    ```
 3. Compile the project:
    ```bash
-   gcc -o minishell shell.c
+   gcc -o myshell myshell.c
    ```
 
 ---
@@ -58,7 +58,7 @@
 ## ▶️ Running the Shell
 Start the shell by running:
 ```bash
-./minishell
+./myshell
 ```
 The shell will enter interactive mode, allowing you to input commands and receive outputs.
 
@@ -108,6 +108,11 @@ Remove files with `rm`:
 shell>$ rm file.txt
 ```
 
+### 📋 Remove Files
+Decode a base64 string `base64 --decode`:
+```bash
+shell>$ echo QWxhZGRpbjpvcGVuIHNlc2FtZQ== | base64 --decode
+```
 ---
 
 ## 🤝 Contributing
