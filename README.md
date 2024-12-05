@@ -108,7 +108,7 @@ Remove files with `rm`:
 shell>$ rm file.txt
 ```
 
-### 📋 Remove Files
+### 📋 Base64 decode
 Decode a base64 string `base64 --decode`:
 ```bash
 shell>$ echo QWxhZGRpbjpvcGVuIHNlc2FtZQ== | base64 --decode
