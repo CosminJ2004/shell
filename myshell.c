@@ -18,6 +18,27 @@
 // -de facut mai frumos totusi redirect
 //
 
+void help() {
+    printf("=== Lista comenzilor disponibile ===\n\n");
+
+    printf("1. base64 -d\n");
+    printf("   Descriere: Decriptor pentru baza 64.\n");
+    printf("   Utilizare: tastează \"base64 -d \+ ce vrei sa decriptezi  și apasă Enter.\n");
+
+    printf("2. exit\n");
+    printf("   Descriere: Închide shell-ul.\n");
+    printf("   Utilizare: tastează \"exit\" și apasă Enter.\n");
+    printf("   Exemplu: \n");
+    printf("       > exit\n\n");
+
+    printf("3. comenzi basic : ls, cd , pwd, mkdir, rmdir, rm , grep, touch , cat, nano, exec, file\n");
+    printf("4. comenzi pentru redirect ce merg combinate cu comenzi simple: |, >, <, cp, mv  \n");
+        printf("5. comenzi logice: &&, ||.\n");
+
+
+    printf("===================================\n");
+}
+
 char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano ./";
 const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 void clear() 
@@ -35,6 +56,10 @@ void get_input(char *c){
     add_history(aux);
     free(aux);
 }
+void last_comand(char *c)
+{
+
+}
 int find_base64_char_index(char c) {
     for (int i = 0; i < 64; i++) {
         if (base64_chars[i] == c) {
@@ -46,10 +71,12 @@ int find_base64_char_index(char c) {
 void decode_base64(char *input) {
     int i = 0, j = 0;
     unsigned char input_buffer[4], output_buffer[3];
-    char* token;
-    char output[100];
-    token=strtok(input," "); token=strtok(NULL," "); token=strtok(NULL," ");
-    strcpy(input,token);
+        char* token;
+        char output[100];
+token=strtok(input," ");
+        token=strtok(NULL," ");
+        token=strtok(NULL," ");
+        strcpy(input,token);
 
     while (input[i] != '\0') {
         for (int k = 0; k < 4; k++) {
@@ -392,45 +419,53 @@ char *trim_spaces(char *str) {
 }
 
 void comenzi_redirect(char *linie_comanda) {
-    char linie_comanda_2[100];
+    char linie_comanda_2[100]; // Alocare buffer pe stivă
     strcpy(linie_comanda_2, linie_comanda);
     char *token;
-    char *sep = " \t\n";
+    char *sep = " \t\n"; // Adăugăm spațiul ca separator
     char *aux[10];
     char ofile[10];
     char comanda[100];
     int i = 0, k=0;
     
     
-    int pozitie = -1, pozitie2=-1; // Initializam cu -1, pentru cazul in care caracterul nu este gasit
-    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--){
-        if (linie_comanda_2[i] == '>') { pozitie = i; break;}
-        if(linie_comanda_2[k]=='<') { pozitie2 = k; break;}
+    int pozitie = -1,pozitie2=-1; // Inițializăm cu -1, pentru cazul în care caracterul nu este găsit
+    for (int i = strlen(linie_comanda_2) - 1; i >= 0; i--) { // Parcurgem șirul de la dreapta la stânga
+        if (linie_comanda_2[i] == '>') {
+            pozitie = i; // Salvăm poziția
+            break;       // Ne oprim, deoarece e prima apariție din dreapta
+        }
+        if(linie_comanda_2[k]=='<') {pozitie2=k; break;}
         k++;
     }
-    if(pozitie!=-1){
-        for (int i = 0; i <= pozitie - 1; i++) {
-            comanda[i] = linie_comanda_2[i];
-        }
-        comanda[pozitie] = '\0';
+        if(pozitie!=-1){
+   for (int i = 0; i <= pozitie - 1; i++) {
+        comanda[i] = linie_comanda_2[i];
+    }
+    comanda[pozitie] = '\0'; // Adăugăm terminatorul de șir
 
-        int j = 0;
-        for (int i = pozitie + 1; i <= strlen(linie_comanda_2) - 1; i++) {
-            ofile[j++] = linie_comanda_2[i];
-        }
-        ofile[j] = '\0';
-        strcpy(ofile,trim_spaces(ofile));
-        strcpy(comanda,trim_spaces(comanda));   
+    // Copierea numelui fișierului de ieșire
+    int j = 0;
+    for (int i = pozitie + 1; i <= strlen(linie_comanda_2) - 1; i++) {
+        ofile[j++] = linie_comanda_2[i];
+    }
+    ofile[j] = '\0'; // Adăugăm terminatorul de șir
+    strcpy(ofile,trim_spaces(ofile));
+    strcpy(comanda,trim_spaces(comanda));
+    printf("Comanda: %s\n", comanda);
+    printf("Output file: %s\n", ofile);
+   
     
-        int n=i;
-        pid_t pid = fork();  
-        if (pid == 0){
+    int n=i;
+     pid_t pid = fork();  
+      if (pid == 0){
             // Deschide fisierul pentru redirect
             int fd = open(ofile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0) {
                 perror("Eroare la deschiderea fisierului");
                 exit(1);
             }
+
             // Redirectioneaza stdout in fisier
             if (dup2(fd, STDOUT_FILENO) == -1) {
                 perror("Eroare dup2");
@@ -439,82 +474,83 @@ void comenzi_redirect(char *linie_comanda) {
             }
             close(fd);
 
-        char *args[10] = {0};
-        int i = 0;
-        char *token = strtok(comanda, " ");
-        while (token != NULL) {
-            args[i++] = token;
-            token = strtok(NULL, " ");
-        }
-        args[i] = NULL;
+         char *args[10] = {0};
+    int i = 0;
+    char *token = strtok(comanda, " ");
+    while (token != NULL) {
+        args[i++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[i] = NULL;
 
-        if (execvp(args[0], args) == -1) {
-            perror("Eroare execvp");
-            exit(1);
-        }}   
-    else if (pid > 0){
+    // Execută comanda
+    if (execvp(args[0], args) == -1) {
+        perror("Eroare execvp");
+        exit(1);
+    }}   
+        else if (pid > 0){
+            wait(NULL);
+        }}
+if (pozitie2 != -1) {
+        // Redirecționare intrare (<)
+        char *token_;
+        char *sep_ = " \t\n"; // Adăugăm spațiul ca separator
+        char *aux_[10];
+        char ifile_[10];
+        char comanda_[100];
+        int i_ = 0;
+
+        for (int i = 0; i <= pozitie2 - 1; i++) {
+            comanda_[i] = linie_comanda_2[i];
+        }
+        comanda_[pozitie2] = '\0'; // Adăugăm terminatorul de șir
+
+        // Copierea numelui fișierului de intrare
+        int j = 0;
+        for (int i = pozitie2 + 1; i <= strlen(linie_comanda_2) - 1; i++) {
+            ifile_[j++] = linie_comanda_2[i];
+        }
+        ifile_[j] = '\0'; // Adăugăm terminatorul de șir
+        strcpy(ifile_, trim_spaces(ifile_));
+        strcpy(comanda_, trim_spaces(comanda_));
+        printf("Comanda: %s\n", comanda_);
+        printf("Input file: %s\n", ifile_);
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Deschide fisierul pentru redirect
+            int fd = open(ifile_, O_RDONLY);
+            if (fd < 0) {
+                perror("Eroare la deschiderea fisierului");
+                exit(1);
+            }
+
+            // Redirectioneaza stdin in fisier
+            if (dup2(fd, STDIN_FILENO) == -1) {
+                perror("Eroare dup2");
+                close(fd);
+                exit(1);
+            }
+            close(fd);
+
+            // Execută comanda
+            char *args[10] = {0};
+            int i = 0;
+            char *token = strtok(comanda_, " ");
+            while (token != NULL) {
+                args[i++] = token;
+                token = strtok(NULL, " ");
+            }
+            args[i] = NULL;
+
+            if (execvp(args[0], args) == -1) {
+                perror("Eroare execvp");
+                exit(1);
+            }
+        } else if (pid > 0) {
             wait(NULL);
         }
-    }
-    if (pozitie2 != -1) {
-            // Redirectionare intrare (<)
-            char *token_;
-            char *sep_ = " \t\n";
-            char *aux_[10];
-            char ifile_[10];
-            char comanda_[100];
-            int i_ = 0;
-
-            for (int i = 0; i <= pozitie2 - 1; i++){
-                comanda_[i] = linie_comanda_2[i];
-            }
-            comanda_[pozitie2] = '\0';
-
-            // Copierea numelui fisierului de intrare
-            int j = 0;
-            for (int i = pozitie2 + 1; i <= strlen(linie_comanda_2) - 1; i++) {
-                ifile_[j++] = linie_comanda_2[i];
-            }
-            ifile_[j] = '\0';
-            strcpy(ifile_, trim_spaces(ifile_));
-            strcpy(comanda_, trim_spaces(comanda_));
-
-            pid_t pid = fork();
-            if (pid == 0) {
-                // Deschide fisierul pentru redirect
-                int fd = open(ifile_, O_RDONLY);
-                if (fd < 0) {
-                    perror("Eroare la deschiderea fisierului");
-                    exit(1);
-                }
-
-                // Redirectioneaza stdin in fisier
-                if (dup2(fd, STDIN_FILENO) == -1) {
-                    perror("Eroare dup2");
-                    close(fd);
-                    exit(1);
-                }
-                close(fd);
-
-                // Executa comanda
-                char *args[10] = {0};
-                int i = 0;
-                char *token = strtok(comanda_, " ");
-                while (token != NULL) {
-                    args[i++] = token;
-                    token = strtok(NULL, " ");
-                }
-                args[i] = NULL;
-
-                if (execvp(args[0], args) == -1) {
-                    perror("Eroare execvp");
-                    exit(1);
-                }
-            } else if (pid > 0) {
-                wait(NULL);
-            }
-    }
-}
+    }}
 
 void comenzi_pipe(char *linie_comanda) {
     char temp[200];
@@ -551,7 +587,7 @@ void comenzi_pipe(char *linie_comanda) {
     }
 
     pid_t pid2 = fork();
-    if (pid2 == 0) {
+    if (pid2 == 0) {  // Al doilea proces copil
         close(fd[1]);  
         dup2(fd[0], STDIN_FILENO);  
         close(fd[0]);
@@ -700,7 +736,7 @@ int procesare_comanda(char *c){
         comenzi_pipe(linie_comanda);
     else if(strstr(sir_comenzi, temp_input[0]) || strstr(linie_comanda, "./"))
         comenzi_simple(cnt);
-    else if(strstr(linie_comanda,"base64 -d"))
+        else if(strstr(linie_comanda,"base64 -d"))
         decode_base64(linie_comanda);
     else if(strstr(temp_input[0],"file"))
          comanda_file(linie_comanda);
@@ -727,6 +763,50 @@ void intro()
 {
     clear(); 
     printf("\033[32mWelcome to our Shell!\n    Agusoaei Alexandru, Jalba Cosmin @2024\033[0m\n");
+        printf(":::...................:::...............................................:::::::::::::::::::::::::::\n");
+printf("::sadsa;::::::::::::::...............:^!7~!?J5Y???7:....................................:::::::::::\n");
+printf(":::::::::::::::::..........:~77!!?5BBGB#&&&&&BGP5J!~:..........................:::::::::::::::::::::\n");
+printf("::::::::::::::::..........7PBGB#####&&#&&&&&&&&&&##GB?..........................::::::::::::::::::::\n");
+printf(":::::::::::::::..........~B#B###&&&&&@&&&&&&&&@@@&#G#BY^:.......................::::::::::::::::::::\n");
+printf(":::::::::::::::.........^G##B#&&&&&&&@@&&&@@@@@@@@@&&#&PY~...................:::::::::::::::::::::::\n");
+printf(":::::::::::::.........:~P#&&&&&&&@&&@@@@@@@&&&&&@@@@&&#GGB~.................::::::::::::::::::::::::\n");
+printf("::::::::::::..........^#&@@&&&@@@@@@@@@&&&&##&&&@@@@@&&&&&Y.................::::::::::::::::::::::::\n");
+printf("::::::::::::..........^B@@@@@@&&&&&##BG55Y!~~~!7YG&@@@@&&&J.................::::::::::::::::::::::::\n");
+printf("::::::::::::..........?&&@@@&BGGPP55YJ??!^^^::^^~!75&@@@&#?..........................:::::::::::::::\n");
+printf(":::::::::::::.........^B&&@&G5555YYJ??7!~^~~~~~!77!7Y#@&P^.................:~^::::::::.....:::::::::\n");
+printf("::::::::::::::.........:B&&G55YYYYJJ?7!~~~^^^~~!7777Y5#J..................^75YP5Y555?~~~^:....::::::\n");
+printf(":::::::::::::::.........?##P5555YYJ??7!!!!!!!!!~~!!7YPP............^!77777B#GB&#BGB#&#BBGGP5?^...:::\n");
+printf(":::::::::::::::......... !BY5GB#####BG5YY555PGGGGGG5Y5J..........^75B##&#&&&&&&&##&&&&#####&#G?..:::\n");
+printf("::::::::::::::..........^!P5PGB###&&&#BPPPB#&&&&&&&#PY^.......:?5BBB#&&&&&&&&&&&&&&&&&&&&&&&##5~:..:\n");
+printf("::::::::::::::.........:PPY5PG##B&&##BG5?Y#&&#&&&&&#GY!......?#&&&&&&&&&&&#&&&&&&&&&@@@@@&&&&&&#5!::\n");
+printf(":::::::::::::::........~PPYY55PPGGGGGPP?:^5#BBB###BGPY? ....5&&&&&@@@@@&&&&@&&&&##&@@@@@@@&@@&&&&B!:\n");
+printf("::::::::::::::::.......^PG5555YY555555Y?^~7PGPPPPPPP55J...:?#&@@@@@@&#BGPG#&&&##GB&BPGB#&&&&&&&&&#P7\n");
+printf(":::::::::::::::::.......!5P5555YYYY55J7!~~~7GPPPPPGGPG!..^P&&@@@@@&B5?J555PBB#BBBP7~~~^~!?5PG#&&&&#G\n");
+printf(":::::::::::::::::........!?5PP5555PPPPP5Y5PPGBGGGGBGPY:..?&&&&@@@&PJ?7J?JYYYJ7777??!^^^^^~~!?5G&&&&#\n");
+printf(":::::::::::::::::::........?PPPPPPGGB&&&&&&&#BBBBBGG~ ...^&&GB@@#PJ77??77!~^^^::^^^^::::^~~!7JYP&&&&\n");
+printf(":::::::::::::......      . ^PPPPB&&&&&&&&&&&&&&#BBBP:.....^P##@&GY?7????7!!!~~^^^~~!??J??7!!!?Y5#@&G\n");
+printf(":::::::::::...        .:::^~JPGGB#BB######&&&&&#BBG#P7^.....^B@&PY5PGB###BGPYJJJJYPB#####BGPYYY5B@&7\n");
+printf(":::::::::............:~!~!!!?YPGGGGPGB&&&&#######BGPJ!?Y?.  .#@#PGPPP5PPGGGGPY??5GBBBGGPPPPGGGP55&&7\n");
+printf(":::::::::::::::....:~!!!!!7???JGBBBGGB#&&&###&&##BGPP?^^7P!  7&GPPPGGGB##BBBP!:.~G#B#B###BB#BBBPYB&J\n");
+printf(":::::::::::^^~^^^^^~!777!?JJ???YGB&&&&&&&&@@@&&##BGGGPJ!^~P!  BPPGB###&&#BGY!:..:~YPBB#&&####BBPYP&J\n");
+printf("::::::::^~~~77!77!7??777JYJ??7!?GGGB##&&&&&&####BBBGGPY?7!?G. 55YYJJJJ?7!!~~^:..:^~~~!77JJJ??????Y&?\n");
+printf(":::::^~^!77!??7??7?777JYJ??77!7JBGGGGGBBB######BBBBBBG5J??JJ7PP7!~^^^^^^~!!JJ???YYJ7!~^:::::^^^~!?B5\n");
+printf("::::~^7!7??77?JYJJJJYYYJ?77!!77?P#BGGGBB####BBBBBBBBGG5YYJ!~Y#P!~~~~~!7??J5B#BPG#&#PY7!!~~^^^~~!7JG#\n");
+printf("^!7^!~??7??JJJ5YJJYYYJ?77!!!77???P##BBBBBBBBB#####BGGP5J7^:.JBPJ????JYJ!~YGBBGGGB##BP!!7??77!77?J5B#\n");
+printf("Y5J^!7?JJJJY5YPYYYJ?7!!!!!77????77JG############BGPP5J7~:...7GG5YYY555J??PGGGGPPGGBBP777JYYYYYY5PP#G\n");
+printf("BBB577??JY55PGGYJ??7??JYYYYJJJJJJJ??J5PGGBBBGGGP5YY?!^::^!7?JP#P555PGGGGPPPPGGGGGGGGP5PGGPPPPPPGGB#5\n");
+printf("PB##BPJ??JYY5PGP5YYYY55&@@&&#GP5YYYYYYYYYJJJJJJJJJJJ??JJYYYYY5#GP555GGGGBBBBBBBBBBBB###BBBBPPGGB###P\n");
+printf("Y5B#&&&#GPPPPG5!!YYJJJ5@&&&@@@@&G?JJJJJ??JJJYY55YYYYYYJJJJJJJ?PBGGP55P5YY55PPGGGGGPPPGGPGGGPGBB##&G!\n");
+printf("BBBB###&&@@&#J^::!55YJB&PP##&@@@BJJJJJYYYY555YYYYYYYJJJJJJJJJJ5#BGP555YYJY55PGGGGGPPYJJYPPPPGB####!:\n");
+printf("#BBBB##&&&&#B!:^::~555&@@&&&#&&@GYYYYYYYYJJJYJYYYYYJJJJJJJJJYYY5##GP55YJ??JY555PYJ?777?J5GGGGB###J::\n");
+printf("BBBB####&&&#G~^^^^:~5PGB&&@@@@@@P55YYYYYY555YYYYYYYYYYJJJJJJJYYY5B&#GGP5Y5YY5PGP5YJ?JJY5PGBBBB##Y:^^\n");
+printf("BBBBBB###&&&J^^^^^^^JGP555PGB#&&P555555PPP5555YYYYYYYJJJJJJYYY55PPGB####B#BBBB##BBGBBBBBB####&#B7:^^\n");
+printf("BGPP55YYPB##!^^^^^^^YBGPPPPP555PPPPPP55555555YYYYYYYYJJJJYY55PPPGP55PGB&&&&&&&&&&&#&&&&##&&##BGG?^^^\n");
+printf("#BPPPGBBGG#P^~~~~~^^5GGGGGGGGPPPPPPPPP5555555555YYYYYYYYY55PPGGGGG5555PGB#&&&&&&&&&&&&&###BBGGPPJ^^^\n");
+printf("G&&&&&&@@@&#7~~~~~~~5GBBBBBBGGGGGGPPPPPPPP555555YYYYY555PPPGP5YPGP5555555PGB#########BBBBBGGPPPP57^^\n");
+printf("P&&&@@&BGPPGGJ!~~~~~5GGGGBBBBBGGGPPPPPPPPPPPP5555YYYJ?JYYJYY?JPGP55YYYYY555PPGGGGGGGGGGGGGPPPP5555J!\n");
+printf("#&&@@#5JJY5PGGGPJ7~!PGGGPPGGGBBGGPPPPPP5YJ777!~::::.....:^~~75P555YYYYYY555555PPPGGPPPPPPPP5555555J?\n");
+printf("@@@@#YYYJYY5PGGBBG5J5GGGGGPP5J7~:^:.:^^::..::::..::^:...:::^755555YYYYYYYY555555PPPPPPPP5555asdsdad5\n");
     sleep(3); 
     clear();
 }
@@ -741,4 +821,5 @@ int main()
         procesare_comanda(input);
     }
     return 0;
-}  
+}   
+    
