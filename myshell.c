@@ -33,7 +33,8 @@ void help() {
 
     printf("3. comenzi basic : ls, cd , pwd, mkdir, rmdir, rm , grep, touch , cat, nano, exec, file\n");
     printf("4. comenzi pentru redirect ce merg combinate cu comenzi simple: |, >, <, cp, mv  \n");
-        printf("5. comenzi logice: &&, ||.\n");
+printf("5.comenzi decript si encript: base64 -d, caesar");
+printf("5. comenzi logice: &&, ||.\n");
 
 
     printf("===================================\n");
@@ -67,6 +68,42 @@ int find_base64_char_index(char c) {
         }
     }
     return -1;
+}
+
+void encoder(char* linie_comanda){
+char* input_f=strtok(linie_comanda, " ");
+
+char* shift_char=strtok(NULL," ");
+
+
+int shift=shift_char[0]-'0';
+
+char* input=strtok(NULL, " ");
+size_t length = strlen(input);
+
+    // Allocate memory for the encoded string
+    char* encoded_string = (char*)malloc(length + 1);
+    if (encoded_string == NULL) {
+        printf("Memory allocation failed.");
+        return NULL;
+    }
+
+    // Perform Caesar encoding
+    for (size_t i = 0; i < length; i++) {
+        char c = input[i];
+        if (c >= 'a' && c <= 'z') {
+            input[i] = 'a' + (c - 'a' + shift) % 26;
+        } else if (c >= 'A' && c <= 'Z') {
+            input[i] = 'A' + (c - 'A' + shift) % 26;
+        } else {
+            input[i] = c;
+        }
+    }
+    encoded_string[length] = '\0';
+
+    printf("%s",encoded_string);
+        printf("\n");
+
 }
 void decode_base64(char *input) {
     int i = 0, j = 0;
@@ -109,7 +146,9 @@ token=strtok(input," ");
 void comanda_ls(){
     pid_t pid=fork();
     if(pid == 0){
-        char *argv[]={"ls", NULL};
+         putenv("LS_COLORS=di=34:ex=32"); // Directoare albastre, fișiere executabile verzi
+        char *argv[]={"ls", "--color=auto", NULL};
+       // char *argv[]={"ls", NULL};
         execve("/bin/ls", argv, NULL);
         perror(NULL);
     }
@@ -609,20 +648,15 @@ void comenzi_logice(char *linie_comanda) {
     char temp[200];
     strcpy(temp, linie_comanda);
 
-    // Pointer pentru strtok_r, strtok_r e thread-safe, in cazul asta mai potrivit decat strtok
+    // Pointer pentru strtok_r
     char *saveptr;
-    int status;
+
     if (strstr(temp, "&&") != NULL) {
-        char *cmd = strtok_r(temp, "&&", &saveptr);
+        char *cmd = strtok_r(temp, "&&", &saveptr);  // strtok_r e thread-safe
         while (cmd != NULL) {
             cmd = trim_spaces(cmd);
-            
-            if(strcmp(cmd, "false") == 0)
-                status = 1;
-            else if(strcmp(cmd, "true") == 0)
-                status = 0;
-            else
-                status = procesare_comanda(cmd);
+
+            int status = procesare_comanda(cmd);
             if(status != 0){
                 break;
             }
@@ -631,9 +665,10 @@ void comenzi_logice(char *linie_comanda) {
         }
     }
     else if(strstr(temp, "||") != NULL){
-        char *cmd = strtok_r(temp, "||", &saveptr);
+        char *cmd = strtok_r(temp, "||", &saveptr);  // strtok_r e thread-safe
         while (cmd != NULL) {
             cmd = trim_spaces(cmd);
+            int status;
             
             if(strcmp(cmd, "false") == 0)
                 status = 1;
@@ -645,6 +680,7 @@ void comenzi_logice(char *linie_comanda) {
             if(status == 0){
                 break;
             }
+
             cmd = strtok_r(NULL, "||", &saveptr);
         }    
     }
@@ -652,7 +688,7 @@ void comenzi_logice(char *linie_comanda) {
 void print_permissions(mode_t mode) {
     char permissions[10];
 
-    // Tipul fisierului
+    // Tipul fișierului
     if (S_ISREG(mode)) permissions[0] = '-';
     else if (S_ISDIR(mode)) permissions[0] = 'd';
     else if (S_ISLNK(mode)) permissions[0] = 'l';
@@ -672,18 +708,19 @@ void print_permissions(mode_t mode) {
     permissions[5] = (mode & S_IWGRP) ? 'w' : '-';
     permissions[6] = (mode & S_IXGRP) ? 'x' : '-';
 
-    // Permisiuni pentru ceilalti
+    // Permisiuni pentru ceilalți
     permissions[7] = (mode & S_IROTH) ? 'r' : '-';
     permissions[8] = (mode & S_IWOTH) ? 'w' : '-';
     permissions[9] = (mode & S_IXOTH) ? 'x' : '-';
 
     permissions[10] = '\0'; // Terminator de șir
 
-    printf("Permisiuni fisier: %s\n", permissions);
+    printf("Permisiuni fișier: %s\n", permissions);
 }
 
 void comanda_file(char *input)
 {
+
     char *file;
     file=strtok(input, " ");
     file=strtok(NULL," ");
@@ -691,28 +728,36 @@ void comanda_file(char *input)
     pid_t pid=fork();
     if(pid==0)
     {
-    struct stat sb;
-        if(stat(file, &sb)) // stat intoarce informatii despre un obiect (aici, fisier)
+     struct stat sb;
+        if(stat(file, &sb)) //stat intoarce informatii despre un obiect (aici, fisier)
         {
             perror("Eroare Fisier dat catre file.\n");
             
         }else{
         if (S_ISREG(sb.st_mode)) {
-            printf("Tipul fisierului: Fisier obisnuit\n");
-        } else if (S_ISDIR(sb.st_mode)) {
-            printf("Tipul fisierului: Director\n");
-        }
+    printf("Tipul fișierului: Fișier obișnuit\n");
+} else if (S_ISDIR(sb.st_mode)) {
+    printf("Tipul fișierului: Director\n");
+} else if (S_ISLNK(sb.st_mode)) {
+    printf("Tipul fișierului: Link simbolic\n");
+}
 
-        printf("ID-ul utilizatorului proprietar: %u\n", sb.st_uid);
-        printf("ID-ul grupului proprietar: %u\n", sb.st_gid);
+printf("ID-ul utilizatorului proprietar: %u\n", sb.st_uid);
+printf("ID-ul grupului proprietar: %u\n", sb.st_gid);
+printf("Numărul de linkuri: %lu\n", (unsigned long)sb.st_nlink);
 
-        printf("Timpul ultimei accesari: %s", ctime(&sb.st_atime));
-        printf("Dimensiunea fisierului (in bytes): %lld\n", (long long)sb.st_size);
+      printf("Timpul ultimei accesări: %s", ctime(&sb.st_atime));
+        printf("Dimensiunea fișierului (în octeți): %lld\n", (long long)sb.st_size);
         printf("Drepturi de acces (octal): %o\n", sb.st_mode & 0777);
+        printf("ID-ul inode-ului: %lu\n", (unsigned long)sb.st_ino);
         print_permissions(sb.st_mode);       
-        }
+ }
+    
     }
         else if(pid>0) wait(NULL);
+
+
+    
 }
 
 
@@ -738,8 +783,12 @@ int procesare_comanda(char *c){
         comenzi_simple(cnt);
         else if(strstr(linie_comanda,"base64 -d"))
         decode_base64(linie_comanda);
-    else if(strstr(temp_input[0],"file"))
+        else if(strstr(temp_input[0],"file"))
          comanda_file(linie_comanda);
+        else if (strstr(linie_comanda, "help"))
+        help();
+        else if(strstr(linie_comanda, "caesar"))
+        encoder(linie_comanda);
     else{
         comanda_necunoscuta(linie_comanda);
     }
@@ -821,5 +870,4 @@ int main()
         procesare_comanda(input);
     }
     return 0;
-}   
-    
+} 
