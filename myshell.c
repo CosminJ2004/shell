@@ -12,34 +12,6 @@
 #include <sys/stat.h>
 #include <sys/wait.h> // wait() din fork
 
-// -de colorat la ls
-// -corectat mv
-// -de scris in readme exemple despre comenzi logice false true, pipe, redirect
-// -de facut mai frumos totusi redirect
-//
-
-void help() {
-    printf("=== Lista comenzilor disponibile ===\n\n");
-
-    printf("1. base64 -d\n");
-    printf("   Descriere: Decriptor pentru baza 64.\n");
-    printf("   Utilizare: tastează \"base64 -d \+ ce vrei sa decriptezi  și apasă Enter.\n");
-
-    printf("2. exit\n");
-    printf("   Descriere: Închide shell-ul.\n");
-    printf("   Utilizare: tastează \"exit\" și apasă Enter.\n");
-    printf("   Exemplu: \n");
-    printf("       > exit\n\n");
-
-    printf("3. comenzi basic : ls, cd , pwd, mkdir, rmdir, rm , grep, touch , cat, nano, exec, file\n");
-    printf("4. comenzi pentru redirect ce merg combinate cu comenzi simple: |, >, <, cp, mv  \n");
-printf("5.comenzi decript si encript: base64 -d, caesar");
-printf("5. comenzi logice: &&, ||.\n");
-
-
-    printf("===================================\n");
-}
-
 char *sir_comenzi = "ls cd echo clear exit mkdir rmdir cp mv pwd grep cat touch nano ./";
 const char base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 void clear() 
@@ -110,7 +82,7 @@ void decode_base64(char *input) {
     unsigned char input_buffer[4], output_buffer[3];
         char* token;
         char output[100];
-token=strtok(input," ");
+        token=strtok(input," ");
         token=strtok(NULL," ");
         token=strtok(NULL," ");
         strcpy(input,token);
@@ -146,7 +118,7 @@ token=strtok(input," ");
 void comanda_ls(){
     pid_t pid=fork();
     if(pid == 0){
-         putenv("LS_COLORS=di=34:ex=32"); // Directoare albastre, fișiere executabile verzi
+        putenv("LS_COLORS=di=34:ex=32");
         char *argv[]={"ls", "--color=auto", NULL};
        // char *argv[]={"ls", NULL};
         execve("/bin/ls", argv, NULL);
